@@ -14,7 +14,7 @@ def _load_label_names_model():
     """
     Load the label names from file
     """
-    return ['pumpkin', 'apple', 'onion']
+    return ['apple', 'banana', 'broccoli', 'carrot', 'onion', 'pineapple', 'pumpkin']
 
 
 def _load_label_name_100():
@@ -316,12 +316,12 @@ def load_preprocess_training_100(batch_id, batch_size):
 
 def display_image_predictions(features, labels, predictions):
     n_classes = 1000
-    label_names = _load_label_name_100()
+    label_names = _load_label_names_model()
     label_binarizer = LabelBinarizer()
     label_binarizer.fit(range(n_classes))
     label_ids = label_binarizer.inverse_transform(np.array(labels))
 
-    fig, axies = plt.subplots(nrows=4, ncols=2)
+    fig, axies = plt.subplots(nrows=2, ncols=2)
     fig.tight_layout()
     fig.suptitle('Softmax Predictions', fontsize=20, y=1.1)
 
