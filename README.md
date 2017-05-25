@@ -23,3 +23,7 @@ The PreprocessData.ipynb will preprocess the images from from images driectory (
 
 This notebook will resize images to 69x69x3, perform data augmentation, convert the images into numpy array, perform shuffling and write into data.pkl file with help of pickle
 
+## ImageClassification.ipynb
+
+This notebook will use the data prepocessed with PreprocessingData.ipynb, build a convnet and test the predictions
+
