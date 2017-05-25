@@ -2,6 +2,15 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelBinarizer
+from random import shuffle
+import os
+from os import listdir
+from os.path import isfile, join
+import cv2
+import numpy as np
+from PIL import Image
+import sys
+import shutil
 
 
 def _load_label_names():
@@ -114,7 +123,7 @@ def _preprocess_and_save(normalize, one_hot_encode, features, labels, filename):
     features = normalize(features)
     labels = one_hot_encode(labels)
 
-    pickle.dump((features, labels), open(filename, 'wb'))
+    pickle.dump((features, labels), open(filename, 'wb'), protocol=4)
 
 
 def preprocess_and_save_data_10(cifar10_dataset_folder_path, normalize, one_hot_encode):
@@ -222,13 +231,25 @@ def preprocess_and_save_data_model(cifar100_dataset_folder_path, normalize, one_
     features, labels = load_model_data()
     validation_count = int(len(features) * 0.1)
 
+    Features =  features[:-validation_count]
+    Labels = labels[:-validation_count]
+
+    splitCount = int(len(tFeatures)/2)
+
     # Prprocess and save a batch of training data
     _preprocess_and_save(
         normalize,
         one_hot_encode,
-        features[:-validation_count],
-        labels[:-validation_count],
-        'preprocess_train_model.p')
+        Features[:-splitCount],
+        Labels[:-splitCount],
+        'preprocess_train_model_20_1.p')
+    
+    _preprocess_and_save(
+        normalize,
+        one_hot_encode,
+        tFeatures[-splitCount:],
+        tLabels[-splitCount:],
+        'preprocess_train_model_20_2.p')
 
     # Use a portion of training batch for validation
     valid_features.extend(features[-validation_count:])
@@ -241,7 +262,7 @@ def preprocess_and_save_data_model(cifar100_dataset_folder_path, normalize, one_
         one_hot_encode,
         np.array(valid_features),
         np.array(valid_labels),
-        'preprocess_validation_model.p')
+        'preprocess_validation_model_20.p')
 
     with open('data.pkl', mode='rb') as file:
         batch = pickle.load(file, encoding='latin1')
@@ -256,7 +277,7 @@ def preprocess_and_save_data_model(cifar100_dataset_folder_path, normalize, one_
         one_hot_encode,
         np.array(test_features),
         np.array(test_labels),
-        'preprocess_test_model.p')
+        'preprocess_test_model_20.p')
 
 def preprocess_and_save_data(folder_path, normalize, one_hot_encode):
     """
@@ -279,7 +300,7 @@ def preprocess_validation_batch(batch_size):
     """
     Load the Preprocessed validation data and return them in batches of <batch_size> or less
     """
-    filename = 'preprocess_validation_model.p'
+    filename = 'preprocess_validation_model_20.p'
     features, labels = pickle.load(open(filename, mode='rb'))
 
     return batch_features_labels(features, labels, batch_size)
@@ -294,11 +315,11 @@ def load_preprocess_training_batch(batch_id, batch_size):
     # Return the training data in batches of size <batch_size> or less
     return batch_features_labels(features, labels, batch_size)
 
-def load_preprocess_training_model(batch_size):
+def load_preprocess_training_model(batch_id, batch_size):
     """
     Load the Preprocessed Training data and return them in batches of <batch_size> or less
     """
-    filename = 'preprocess_train_model.p'
+    filename = 'preprocess_train_model_20_'+ str(batch_id) + '.p'
     features, labels = pickle.load(open(filename, mode='rb'))
 
     # Return the training data in batches of size <batch_size> or less
@@ -321,7 +342,7 @@ def display_image_predictions(features, labels, predictions):
     label_binarizer.fit(range(n_classes))
     label_ids = label_binarizer.inverse_transform(np.array(labels))
 
-    fig, axies = plt.subplots(nrows=2, ncols=2)
+    fig, axies = plt.subplots(nrows=10, ncols=2, figsize=(15,15))
     fig.tight_layout()
     fig.suptitle('Softmax Predictions', fontsize=20, y=1.1)
 
@@ -333,7 +354,8 @@ def display_image_predictions(features, labels, predictions):
     for image_i, (feature, label_id, pred_indicies, pred_values) in enumerate(zip(features, label_ids, predictions.indices, predictions.values)):
         pred_names = [label_names[pred_i] for pred_i in pred_indicies]
         correct_name = label_names[label_id]
-
+        print('values: ',pred_values[::-1])
+        print('names: ',pred_names[::-1])
         axies[image_i][0].imshow(feature)
         axies[image_i][0].set_title(correct_name)
         axies[image_i][0].set_axis_off()
@@ -342,3 +364,134 @@ def display_image_predictions(features, labels, predictions):
         axies[image_i][1].set_yticks(ind + margin)
         axies[image_i][1].set_yticklabels(pred_names[::-1])
         axies[image_i][1].set_xticks([0, 0.5, 1.0])
+
+def resize_images(img_path, conv_path, data_aug=False):
+    """
+    Resize images with 224*224*3
+    """
+
+    if not os.path.exists(conv_path):
+        os.makedirs(conv_path)
+        print("\nNew Directory created")
+    else:
+        shutil.rmtree(conv_path)
+        os.makedirs(conv_path)
+        print("\nNew Directory created")
+    onlyfiles = [f for f in listdir(img_path) if isfile(join(img_path, f))]
+    print("Total files in input dir: {}".format(len(onlyfiles)))
+    for i, f in enumerate(onlyfiles):
+        #print(i)
+        #print(f)
+        img = Image.open(img_path+'/'+f)
+        img = img.resize((69,69), Image.ANTIALIAS)
+        newPath = conv_path+'/'+str(i)+'.jpeg'
+        sys.stdout.write("\r {}".format(newPath))
+        sys.stdout.flush()
+        img.save(newPath)
+        im = cv2.imread(newPath)
+        if data_aug:
+        # copy image to display all 4 variations
+            horizontal_img = im.copy()
+            vertical_img = im.copy()
+            both_img = im.copy()
+
+            # flip img horizontally, vertically,
+            # and both axes with flip()
+            horizontal_img = cv2.flip( im, 0 )
+            vertical_img = cv2.flip( im, 1 )
+            both_img = cv2.flip( im, -1 )
+            
+            cv2.imwrite(conv_path+'/'+str(i)+'_1.jpeg',horizontal_img) 
+            cv2.imwrite(conv_path+'/'+str(i)+'_2.jpeg',vertical_img) 
+            cv2.imwrite(conv_path+'/'+str(i)+'_3.jpeg',both_img) 
+        if(im.shape[2] != 3):
+            print(im.shape)
+
+def convert_image_to_numpy(img_path):
+    """
+    Convert Images to numpy array
+    """
+    img_path = './converted_test'
+    onlyfiles = [f for f in listdir(img_path) if isfile(join(img_path,f))]
+    print(len(onlyfiles))
+    data = []
+    label = []
+    rgb = []
+    for i, f in enumerate(onlyfiles):
+        img = cv2.imread(img_path+'/'+f)
+        b,g,r = cv2.split(img)
+        img2 = cv2.merge([r,g,b])
+        rgb.append(img2)
+        data.append(img)
+        label.append(0)
+    data = rgb
+    return data, label
+
+def normalize(x):
+    """
+    Normalize a list of sample image data in the range of 0 to 1
+    : x: List of image data.  The image shape is (32, 32, 3)
+    : return: Numpy array of normalize data
+    """
+    # TODO: Implement Function
+    #x = np.divide(x,np.max(x, axis=0))
+    return x/np.max(x, axis=0)
+def one_hot_encode(x):
+    """
+    One hot encode a list of sample labels. Return a one-hot encoded vector for each label.
+    : x: List of sample Labels
+    : return: Numpy array of one-hot encoded labels
+    """
+    # TODO: Implement Function
+    #print(x)
+    oneHot = None
+    oneHot = np.zeros((len(x), 7))
+    for idx, v in enumerate(x):
+        oneHot[idx][v] = 1
+    return oneHot
+    
+def preprocess_and_save_test_data(f, l):
+    """
+    Preprocess Training and Validation Data
+    """
+
+    valid_features = []
+    valid_labels = []
+    
+    
+    # load the test data
+    test_features = f
+    test_labels = l
+
+    # Preprocess and Save all test data
+    # test_features = normalize(f)
+    # test_labels = one_hot_encode(l)
+    # print(len(test_features))
+    # print(len(test_labels))
+    # pickle.dump((test_features, test_labels), open('preprocess_test_model_20.p', 'wb'), protocol=4)
+
+
+    _preprocess_and_save(
+        normalize,
+        one_hot_encode,
+        np.array(test_features),
+        np.array(test_labels),
+        'preprocess_test_model_20.p')
+
+
+def preprocess_and_save_test_data():
+    with open('new_data.pkl', mode='rb') as file:
+        batch = pickle.load(file, encoding='latin1')
+
+    # load the test data
+    test_features = batch['train']
+    test_labels = batch['train_labels']
+
+    # Preprocess and Save all test data
+    _preprocess_and_save(
+        normalize,
+        one_hot_encode,
+        np.array(test_features),
+        np.array(test_labels),
+        'preprocess_test_model_new.p')
+

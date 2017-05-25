@@ -191,12 +191,12 @@ def test_output(output):
 
 
 def test_conv_net(conv_net):
-    test_x = tf.placeholder(tf.float32, [None, 224, 224, 3])
+    test_x = tf.placeholder(tf.float32, [None, 224, 224, 7])
     test_k = tf.placeholder(tf.float32)
 
     logits_out = conv_net(test_x, test_k)
 
-    assert logits_out.get_shape().as_list() == [None, 3],\
+    assert logits_out.get_shape().as_list() == [None, 7],\
         'Incorrect Model Output.  Found {}'.format(logits_out.get_shape().as_list())
 
     print('Neural Network Built!')
@@ -204,8 +204,8 @@ def test_conv_net(conv_net):
 
 def test_train_nn(train_neural_network):
     mock_session = tf.Session()
-    test_x = np.random.rand(128, 32, 32, 3)
-    test_y = np.random.rand(128, 10)
+    test_x = np.random.rand(128, 224, 224, 3)
+    test_y = np.random.rand(128, 7)
     test_k = np.random.rand(1)
     test_optimizer = tf.train.AdamOptimizer()
 
