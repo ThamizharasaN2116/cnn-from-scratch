@@ -12,46 +12,11 @@ from PIL import Image
 import sys
 import shutil
 
-
-def _load_label_names():
-    """
-    Load the label names from file
-    """
-    return ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
-
 def _load_label_names_model():
     """
     Load the label names from file
     """
     return ['apple', 'banana', 'broccoli', 'carrot', 'onion', 'pineapple', 'pumpkin']
-
-
-def _load_label_name_100():
-    """
-    Load the label names from file
-    """
-    return ['apple', 'aquarium_fish', 'baby', 'bear', 'beaver', 'bed', 'bee', 'beetle', 'bicycle', 'bottle', 'bowl', 'boy', 'bridge', 'bus', 'butterfly', 'camel', 'can', 'castle', 'caterpillar', 'cattle', 'chair', 'chimpanzee', 'clock', 'cloud', 'cockroach', 'couch', 'crab', 'crocodile', 'cup', 'dinosaur', 'dolphin', 'elephant', 'flatfish', 'forest', 'fox', 'girl', 'hamster', 'house', 'kangaroo', 'keyboard', 'lamp', 'lawn_mower', 'leopard', 'lion', 'lizard', 'lobster', 'man', 'maple_tree', 'motorcycle', 'mountain', 'mouse', 'mushroom', 'oak_tree', 'orange', 'orchid', 'otter', 'palm_tree', 'pear', 'pickup_truck', 'pine_tree', 'plain', 'plate', 'poppy', 'porcupine', 'possum', 'rabbit', 'raccoon', 'ray', 'road', 'rocket', 'rose', 'sea', 'seal', 'shark', 'shrew', 'skunk', 'skyscraper', 'snail', 'snake', 'spider', 'squirrel', 'streetcar', 'sunflower', 'sweet_pepper', 'table', 'tank', 'telephone', 'television', 'tiger', 'tractor', 'train', 'trout', 'tulip', 'turtle', 'wardrobe', 'whale', 'willow_tree', 'wolf', 'woman', 'worm']
-
-    # picked from 
-    # import pickle
-    # with open(cifar100_dataset_folder_path+"/meta", 'rb') as fo:
-    #     dict = pickle.load(fo, encoding='latin')
-    # print(dict['fine_label_names'])
-    #return ['apple', 'aquarium_fish', 'baby', 'bear', 'beaver', 'bed', 'bee', 'beetle', 'bicycle', 'bottle', 'bowl', 'boy', 'bridge', 'bus', 'butterfly', 'camel', 'can', 'castle', 'caterpillar', 'cattle', 'chair', 'chimpanzee', 'clock', 'cloud', 'cockroach', 'couch', 'crab', 'crocodile', 'cup', 'dinosaur', 'dolphin', 'elephant', 'flatfish', 'forest', 'fox', 'girl', 'hamster', 'house', 'kangaroo', 'keyboard', 'lamp', 'lawn_mower', 'leopard', 'lion', 'lizard', 'lobster', 'man', 'maple_tree', 'motorcycle', 'mountain', 'mouse', 'mushroom', 'oak_tree', 'orange', 'orchid', 'otter', 'palm_tree', 'pear', 'pickup_truck', 'pine_tree', 'plain', 'plate', 'poppy', 'porcupine', 'possum', 'rabbit', 'raccoon', 'ray', 'road', 'rocket', 'rose', 'sea', 'seal', 'shark', 'shrew', 'skunk', 'skyscraper', 'snail', 'snake', 'spider', 'squirrel', 'streetcar', 'sunflower', 'sweet_pepper', 'table', 'tank', 'telephone', 'television', 'tiger', 'tractor', 'train', 'trout', 'tulip', 'turtle', 'wardrobe', 'whale', 'willow_tree', 'wolf', 'woman', 'worm']
-
-
-
-def load_cfar10_batch(cifar10_dataset_folder_path, batch_id):
-    """
-    Load a batch of the dataset
-    """
-    with open(cifar10_dataset_folder_path + '/data_batch_' + str(batch_id), mode='rb') as file:
-        batch = pickle.load(file, encoding='latin1')
-
-    features = batch['data'].reshape((len(batch['data']), 3, 32, 32)).transpose(0, 2, 3, 1)
-    labels = batch['labels']
-
-    return features, labels
 
 def load_model_data():
     """
@@ -63,18 +28,6 @@ def load_model_data():
     features = batch['train']
     labels = batch['train_labels']
 
-    return features, labels
-
-def load_cfar100_batch(cifar10_dataset_folder_path):
-    """
-    Load a batch of the dataset
-    """
-    with open(cifar10_dataset_folder_path + '/train', mode='rb') as file:
-        batch = pickle.load(file, encoding='latin1')
-
-    features = batch['data'].reshape((len(batch['data']), 3, 32, 32)).transpose(0, 2, 3, 1)
-    labels = batch['fine_labels']
-    
     return features, labels
 
 def display_stats(sample_id):
@@ -124,101 +77,6 @@ def _preprocess_and_save(normalize, one_hot_encode, features, labels, filename):
     labels = one_hot_encode(labels)
 
     pickle.dump((features, labels), open(filename, 'wb'), protocol=4)
-
-
-def preprocess_and_save_data_10(cifar10_dataset_folder_path, normalize, one_hot_encode):
-    """
-    Preprocess Training and Validation Data
-    """
-    n_batches = 5
-    valid_features = []
-    valid_labels = []
-
-    for batch_i in range(1, n_batches + 1):
-        features, labels = load_cfar10_batch(cifar10_dataset_folder_path, batch_i)
-        validation_count = int(len(features) * 0.1)
-
-        # Prprocess and save a batch of training data
-        _preprocess_and_save(
-            normalize,
-            one_hot_encode,
-            features[:-validation_count],
-            labels[:-validation_count],
-            'preprocess_batch_' + str(batch_i) + '.p')
-
-        # Use a portion of training batch for validation
-        valid_features.extend(features[-validation_count:])
-        valid_labels.extend(labels[-validation_count:])
-
-    # Preprocess and Save all validation data
-    _preprocess_and_save(
-        normalize,
-        one_hot_encode,
-        np.array(valid_features),
-        np.array(valid_labels),
-        'preprocess_validation.p')
-
-    with open(cifar10_dataset_folder_path + '/test_batch', mode='rb') as file:
-        batch = pickle.load(file, encoding='latin1')
-
-    # load the test data
-    test_features = batch['data'].reshape((len(batch['data']), 3, 32, 32)).transpose(0, 2, 3, 1)
-    test_labels = batch['labels']
-
-    # Preprocess and Save all test data
-    _preprocess_and_save(
-        normalize,
-        one_hot_encode,
-        np.array(test_features),
-        np.array(test_labels),
-        'preprocess_test.p')
-
-def preprocess_and_save_data_100(cifar100_dataset_folder_path, normalize, one_hot_encode):
-    """
-    Preprocess Training and Validation Data
-    """
-    n_batches = 5
-    valid_features = []
-    valid_labels = []
-
-    features, labels = load_cfar100_batch(cifar100_dataset_folder_path)
-    validation_count = int(len(features) * 0.1)
-
-    # Prprocess and save a batch of training data
-    _preprocess_and_save(
-        normalize,
-        one_hot_encode,
-        features[:-validation_count],
-        labels[:-validation_count],
-        'preprocess_train_100.p')
-
-    # Use a portion of training batch for validation
-    valid_features.extend(features[-validation_count:])
-    valid_labels.extend(labels[-validation_count:])
-        
-
-    # Preprocess and Save all validation data
-    _preprocess_and_save(
-        normalize,
-        one_hot_encode,
-        np.array(valid_features),
-        np.array(valid_labels),
-        'preprocess_validation_100.p')
-
-    with open(cifar100_dataset_folder_path + '/test', mode='rb') as file:
-        batch = pickle.load(file, encoding='latin1')
-
-    # load the test data
-    test_features = batch['data'].reshape((len(batch['data']), 3, 32, 32)).transpose(0, 2, 3, 1)
-    test_labels = batch['fine_labels']
-
-    # Preprocess and Save all test data
-    _preprocess_and_save(
-        normalize,
-        one_hot_encode,
-        np.array(test_features),
-        np.array(test_labels),
-        'preprocess_test_100.p')
 
 def preprocess_and_save_data_model(cifar100_dataset_folder_path, normalize, one_hot_encode):
     """
