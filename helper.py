@@ -275,15 +275,17 @@ def convert_image_to_numpy(img_path):
     data = []
     label = []
     rgb = []
+    filenames = []
     for i, f in enumerate(onlyfiles):
         img = cv2.imread(img_path+'/'+f)
+        filenames.append(f)
         b,g,r = cv2.split(img)
         img2 = cv2.merge([r,g,b])
         rgb.append(img2)
         data.append(img)
         label.append(0)
     data = rgb
-    return data, label
+    return data, label, filenames
 
 def normalize(x):
     """
@@ -308,34 +310,6 @@ def one_hot_encode(x):
         oneHot[idx][v] = 1
     return oneHot
     
-def preprocess_and_save_test_data(f, l):
-    """
-    Preprocess Training and Validation Data
-    """
-
-    valid_features = []
-    valid_labels = []
-    
-    
-    # load the test data
-    test_features = f
-    test_labels = l
-
-    # Preprocess and Save all test data
-    # test_features = normalize(f)
-    # test_labels = one_hot_encode(l)
-    # print(len(test_features))
-    # print(len(test_labels))
-    # pickle.dump((test_features, test_labels), open('preprocess_test_model_20.p', 'wb'), protocol=4)
-
-
-    _preprocess_and_save(
-        normalize,
-        one_hot_encode,
-        np.array(test_features),
-        np.array(test_labels),
-        'preprocess_test_model_20.p')
-
 
 def preprocess_and_save_test_data():
     with open('new_data.pkl', mode='rb') as file:
@@ -353,3 +327,36 @@ def preprocess_and_save_test_data():
         np.array(test_labels),
         'preprocess_test_model_new.p')
 
+def preprocess_and_save_test_data(f, l, filenames):
+    """
+    Preprocess Training and Validation Data
+    """
+
+    valid_features = []
+    valid_labels = []
+    
+    
+    # load the test data
+    test_features = f
+    test_labels = l
+
+    #Preprocess and Save all test data
+    test_features = normalize(f)
+    test_labels = one_hot_encode(l)
+    #print(len(test_features))
+    #print(len(test_labels))
+    pickle.dump((test_features, test_labels, filenames), open('preprocess_test_model_20.p', 'wb'), protocol=4)
+
+
+    # _preprocess_and_save(
+    #     normalize,
+    #     one_hot_encode,
+    #     np.array(test_features),
+    #     np.array(test_labels),
+    #     'preprocess_test_model_20.p')
+
+def _load_label_name_for_id(id):
+    """
+    Get label name for an id
+    """
+    return _load_label_names_model()[id]
