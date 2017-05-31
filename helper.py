@@ -16,7 +16,7 @@ def _load_label_names_model():
     """
     Load the label names from file
     """
-    return ['apple', 'banana', 'broccoli', 'carrot', 'onion', 'pineapple', 'pumpkin']
+    return ['apple', 'banana', 'broccoli', 'carrot', 'onion', 'pineapple', 'spaghetti']
 
 def load_model_data():
     """
@@ -360,3 +360,11 @@ def _load_label_name_for_id(id):
     Get label name for an id
     """
     return _load_label_names_model()[id]
+
+def create_new_folder(conv_path):
+    """
+    Delete and create new folder
+    """
+    
+    shutil.rmtree(conv_path)
+    os.makedirs(conv_path)
